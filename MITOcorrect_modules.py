@@ -35,7 +35,7 @@ def loadnamevariants(source=None):
     #  Identify source
 
     if source is None:
-        url = 'https://raw.githubusercontent.com/tjcreedy/biotools/master/gene_name_variants.txt'
+        url = 'https://raw.githubusercontent.com/tjcreedy/genenames/main/gene_name_variants.txt'
         source = urllib.request.urlopen(url)
     else:
         source = open(source, 'r')
@@ -83,7 +83,7 @@ def halve(lis):
 
 def parse_specs(path, alignpath, namevariants):
     # path, alignpath = [args.specifications, args.alignmentpaths]
-    # namevariants, annotypes = loadnamevariants()
+    # namevariants, annotypes, products = loadnamevariants()
 
     # Parse the master specifications file
 
@@ -114,8 +114,7 @@ def parse_specs(path, alignpath, namevariants):
             name = namevariants[items[0].upper()]
 
         if name is None:
-            sys.exit(f"Error: gene name {items[0]} in first column of line "
-                     f"{ln} is not recognised")
+            sys.exit(f"Error: gene name {items[0]} in first column of line {ln} is not recognised")
 
         # Generate holding dict for this line's specs
         hold = dict()
@@ -144,37 +143,35 @@ def parse_specs(path, alignpath, namevariants):
             hold[spec] = value
 
         # Do input checking
-        for spec, value in hold.items():
+
+        for spec in hold.keys():
+            # spec = 'overlap'
+            value = hold[spec]
             err = f"Error: value {value} for {spec} on line {ln}"
-            # spec = 'alignbody'
-            # value = hold[spec]
+
             if spec == 'end':
                 # Check start/stop column
                 if value not in ['start', 'stop']:
-                    sys.exit(f"Error: end specification {value} on line {ln} "
-                             "is not recognised")
+                    sys.exit(f"Error: end specification {value} on line {ln} is not recognised")
                 end = value
             elif spec == 'overlap':
                 # Overlap should be dict of recognised context names and 
                 # integer distances
                 if type(value) is not dict:
-                    sys.exit(f"Error: specification for {spec} on line {ln} "
-                             "is not recognised")
+                    sys.exit(f"Error: specification for {spec} on line {ln} is not recognised")
+                newvalue = dict()
                 for c, d in value.items():
                     # c, d = list(value.items())[0]
-                    del hold[spec][c]
-
                     if c in namevariants:
                         c = namevariants[c]
                     else:
-                        sys.exit(f"Error: context name {c} on line {ln} is "
-                                 "not recognised")
+                        sys.exit(f"Error: context name {c} on line {ln} is not recognised")
                     if str_is_int(d):
                         d = int(d)
                     else:
-                        sys.exit(f"Error: overlap {d} for name {c} on line "
-                                 f"{ln} is not an integer")
-                    hold[spec][c] = d
+                        sys.exit(f"Error: overlap {d} for name {c} on line {ln} is not an integer")
+                    newvalue[c] = d
+                hold[spec] = newvalue
             elif spec in ['overlapmaxdistance', 'searchdistance', 'length']:
                 # MaxContextDistance, SearchDistance, Length
                 # should all be > 0 integers

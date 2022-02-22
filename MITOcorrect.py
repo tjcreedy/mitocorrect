@@ -80,17 +80,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # arglist = ("-s MITOcorrect_specs.tsv "
-    #            "-g gbmaster_2020-06-17_current/GBDL00876.gb "
-    #            "gbmaster_2020-06-17_current/GBDL00985.gb "
-    #            "gbmaster_2020-06-17_current/GBDL00750.gb "
+    #            "-g gbmaster_2022-01-03_current/GBDL00876.gb "
+    #            "gbmaster_2022-01-03_current/GBDL00985.gb "
+    #            "gbmaster_2022-01-03_current/GBDL00750.gb "
     #            "-l testlog.txt "
     #            "-a aaalignfile.tsv "
     #            "-o testout/ "
     #            "-t 2 -b 5 -c aa -r -m 0 -f").split()
-    # -g dir/test_multigenbank.gb
-    # -g /home/thomas/Documents/NHM_postdoc/MMGdatabase/gbmaster_2020-04-25_current/CCCP00094.gb
     # import os
-    # os.chdir('/home/thomas/Documents/NHM_postdoc/MMGdatabase/')
+    # os.chdir('/home/thomas/work/iBioGen_postdoc/MMGdatabase/')
     # args = parser.parse_args(arglist)
 
     # Parse the arguments into the main utility variables
@@ -107,8 +105,7 @@ if __name__ == "__main__":
 
     # Do the work
     seqrecordgen = mcm.get_seqrecords(args.genbank, args.onefile)
-    issues = pool.map(functools.partial(mcm.process_seqrecord, args,
-                                        utilityvars, writers),
+    issues = pool.map(functools.partial(mcm.process_seqrecord, args, utilityvars, writers),
                       seqrecordgen)
 
     # Delete temporary alignment directory
