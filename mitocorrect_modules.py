@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Mar 21 09:46:36 2020
-
-@author: thomas
+@author: Thomas J. Creedy
 """
 
 import sys
@@ -254,7 +252,7 @@ def parse_specs(path, alignpath, namevariants):
 
     defaults = {'overlap': None,
                 'overlapmaxdistance': 50,
-                'searchcode': None,
+                'searchcode': 'N',
                 'searchsequence': None,
                 'searchdistance': 30,
                 'alignbody': 0,
@@ -288,34 +286,24 @@ def parse_specs(path, alignpath, namevariants):
         specs[name] = specd
 
     # Parse the alignment files if present
-
-    if alignpath is not None:
-        sys.stdout.write(f"Parsing alignment file {alignpath}\n")
-
-        sh = open(alignpath, 'r')
-
-        ln = 0
-        for line in sh:
-            # line = sh.readline()
-
-            ln += 1
-
-            # Extract the values of the row and split to list
-            items = line.strip().split('\t')
-
-            # Get correct gene name
-            name = None
-            if items[0].upper() in namevariants:
-                name = namevariants[items[0].upper()]
-
-            if name is None:
-                sys.exit(f"Error: gene name {items[0]} on line {str(ln)} is not recognised")
-
-            elif name not in specs:
-                sys.exit(f"Error: gene name {name} on line {str(ln)} is not in {path}")
-
-            specs[name]['apath'] = items[1]
-        sh.close()
+    sys.stdout.write(f"Parsing alignment file {alignpath}\n")
+    sh = open(alignpath, 'r')
+    ln = 0
+    for line in sh:
+        # line = sh.readline()
+        ln += 1
+        # Extract the values of the row and split to list
+        items = line.strip().split('\t')
+        # Get correct gene name
+        name = None
+        if items[0].upper() in namevariants:
+            name = namevariants[items[0].upper()]
+        if name is None:
+            sys.exit(f"Error: gene name {items[0]} on line {str(ln)} is not recognised")
+        elif name not in specs:
+            sys.exit(f"Error: gene name {name} on line {str(ln)} is not in {path}")
+        specs[name]['apath'] = items[1]
+    sh.close()
 
     return specs
 
@@ -934,7 +922,7 @@ def align_and_analyse(results, args, specs, target, seqname, temp):
         # Skip if this result cannot generate a better score than the current
         # minimum score (i.e. given the overlap changes, the alignment scores
         # would have to be less than zero)
-        if args.faster and minscore < float('inf'):
+        if not args.fullassessment and minscore < float('inf'):
             wpscore = sum(result['wpositionscore'])
             if minscore - wpscore < 0:
                 result['reject'] = 'fastscore > ' + str(round(minscore, 2))
@@ -1034,7 +1022,7 @@ def align_and_analyse(results, args, specs, target, seqname, temp):
         ccts = [[ch.count(c) for c in '-di'] for ch in halve(cid)]
         for ci, s in enumerate(['savc', 'sivc', 'sdvc']):
             for ei in [0, 1]:
-                mult = 3 if args.alignmenttype else 1
+                mult = 3 if args.alignmenttype == 'aa' else 1
                 result[s][ei] = ccts[ei][ci] * mult
         # Caculate the indel score and weighted score
         result['indelscore'] = [i + d for i, d in zip(result['sivc'],
@@ -1471,6 +1459,7 @@ def write_genbanks(outdir, filepaths, onefile, seqq):
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
             # For multiple files, for each file set up dict with path, 
+            # counter and total number of seqrecords to expect. Opening file
             # counter and total number of seqrecords to expect. Opening file
             # handle is saved for when the file is actually encountered.
             # This way the number of open writing files won't exceed the 

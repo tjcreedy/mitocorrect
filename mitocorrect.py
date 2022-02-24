@@ -45,34 +45,84 @@ def required_multiple(multiple):
 # Argument parser
 
 
-parser = argparse.ArgumentParser(description="""description:
-                                                |n
-                                                Text
-                                                |n
-                                                Text
-                                                """,
+parser = argparse.ArgumentParser(description=
+            """Mitocorrect corrects annotations on a mitochondrial genome, supplied as one or more
+            genbank-format flat file(s). Annotations are corrected according to the parameters 
+            defined in a specifications table, supplied as a tab-separated values file. As part of
+            the process of assessing potential annotations, mitocorrect aligns potential gene 
+            sequences with a reference (aka profile) alignment for a given gene. These should be 
+            constructed prior to running and paths given in another tsv file. MAFFT should be 
+            installed and on the PATH available to mitocorrect; biopython should also be installed. 
+            |n
+            Mitocorrect is multithreaded so outputs relatively little intermediate information. 
+            Detailed information can be viewed in the log file during running and/or in the results
+            file upon completion. The corrected annotations are output in one or several genbank-
+            format flat file(s).
+            |n
+            See the readme at https://github.com/tjcreedy/mitocorrect for more information 
+            """,
                                  formatter_class=MultilineFormatter)
 
 parser._optionals.title = "arguments"
 
-parser.add_argument('-t', '--threads', type=int)
-parser.add_argument('-n', '--namevariants')  # Additional name variants file, optional
-parser.add_argument('-s', '--specifications')  # Required, specifications file
-parser.add_argument('-a', '--alignmentpaths')  # Optional?, alignments file
-parser.add_argument('-l', '--logfile')  # Optional, log file
-parser.add_argument('-g', '--genbank', nargs='+')  # Required, one or more genbank files
-parser.add_argument('-b', '--translationtable')
-parser.add_argument('-e', '--framefree', default=False,
-                    action='store_true')  # Optional - flag to say that search strings do not start in frame.
-parser.add_argument('-c', '--alignmenttype')  # aa or nt
-parser.add_argument('-o', '--outputdirectory')
-parser.add_argument('-k', '--keepalignments', default=False, action='store_true')
-parser.add_argument('-r', '--detailedresults', default=False, action='store_true')
-parser.add_argument('-p', '--potentialfeatures', default=False, action='store_true')
-parser.add_argument('-m', '--maxinternalstops', default=0, type=int)
-parser.add_argument('-f', '--faster', action='store_true', default=False)
-parser.add_argument('-1', '--onefile',
-                    type=str)  # Output all input gb files in one output file, given as argument
+# Required
+parser.add_argument('-s', '--specifications', type = str, metavar = 'path', required = True,
+                    help = "path to a specifications file in tab-separated variables format")
+parser.add_argument('-g', '--genbank', type = str, nargs = '+', required = T, metavar = 'path',
+                    help = "path(s) to genbank-format files containing annotated mitogenomes to "
+                           "correct")
+parser.add_argument('-a', '--alignmentpaths', type = str, required = T, metavar = 'path',
+                    help = "path to a two column tab-separated variables file giving the name and"
+                           "path to a profile alignment for each gene")
+parser.add_argument('-b', '--translationtable', type = int, required = T, metavar = 'n',
+                    help = "the appropriate genetic code translation table number (see "
+                           "https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi")
+
+# Optional
+parser.add_argument('-t', '--threads', type = int, default = 1, metavar = 'n',
+                    help = "number of simultaneous threads to use for correcting mitogenomes "
+                           "(default: 1).")
+parser.add_argument('-c', '--alignmenttype', type = str, default = 'nt', choice = ['aa', 'nt'],
+                    help = "the type of sequence data used for the supplied profile alignments ( "
+                           "default: nt)")
+parser.add_argument('-o', '--outputdirectory', type = str, default = 'mitocorrect_output',
+                    metavar = 'path',
+                    help = "path to a directory (created if needed) to which outputs will be "
+                           "written (default: a directory called mitocorrect_output)")
+parser.add_argument('-l', '--logfile', type = str, default = 'mitocorrect.log', metavar = 'name',
+                    help = "name of a file to which log messages will be written, saved to the "
+                           "output directory (default: mitocorrect.log)")
+parser.add_argument('-r', '--detailedresults', default=False, action='store_true',
+                    help = "if a file name is supplied, write a detailed table of individual "
+                           "potential annotation statistics and scores to filtering_results.tsv "
+                           "in the output directory (default: not written)")
+parser.add_argument('-1', '--onefile', type = str, metavar = 'name',
+                    help = "if a file name is supplied, write all corrected sequences to a single "
+                           "genbank-format file with this name in the output directory (default: "
+                           "each input file written to a separate output file)")
+parser.add_argument('-k', '--keepalignments', default = False, action = 'store_true',
+                    help = "retain all alignments of individual potential annotation to profiles "
+                           "(default: individual alignments cleaned up after each assessement)")
+parser.add_argument('-n', '--namevariants', type = str, metavar = 'path',
+                    help = "path to a file specifying variant gene names to add to those retrieved"
+                           "from the list at https://github.com/tjcreedy/genenames (default: no "
+                           "additional variants)")  # Additional name variants file, optional
+parser.add_argument('-m', '--maxinternalstops', type = int, default = 0,
+                    help = "number of stops permitted in the translation of annotations (default: "
+                           "0")
+parser.add_argument('-e', '--framefree', default = False, action  = 'store_true',
+                    help = "allow codon search strings to not start in frame with one another; "
+                           "not generally recommended (default: codon search strings start in "
+                           "frame)")
+parser.add_argument('-p', '--potentialfeatures', default = False, action = 'store_true',
+                    help = "add all potential annotations as features to the output genbank-format"
+                           " file(s); not generally recommended (default: only selected "
+                           "annotations recorded)")
+parser.add_argument('-f', '--fullassessment', action = 'store_true', default = False,
+                    help = "assess the alignment of all potential annotations, even if their "
+                           "overlap score means they cannot possibly be selected; not generally "
+                           "recommended (default: only align potential annotations that have good "
+                           "enough overlap scores to be contenders for selection)")
 
 # Main
 if __name__ == "__main__":
