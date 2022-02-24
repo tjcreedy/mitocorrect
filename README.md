@@ -8,7 +8,7 @@ Download and run the scripts from this repository.
 You must have the biopython module installed, you can install this through pip, conda or your 
 package manager.
 
-You must also have [https://mafft.cbrc.jp/alignment/software/](mafft) installed and available on 
+You must also have [mafft](https://mafft.cbrc.jp/alignment/software/) installed and available on 
 the PATH.
 
 ### System requirements
@@ -26,11 +26,11 @@ is accurately applied.
 ### Annotating mitogenomes
 Mitocorrect works on mitochondrial genomes that are already annotated. If you have unannotated 
 mitogenomes, you can annotate them by using one of the many annotation tools out there. For small
-quantities of mitogenomes, the [http://mitos2.bioinf.uni-leipzig.de/index.py](MITOS WebServer) is
-pretty good. For larger quantities, you could use [https://github.com/linzhi2013/MitoZ/](MitoZ).
+quantities of mitogenomes, the [MITOS WebServer](http://mitos2.bioinf.uni-leipzig.de/index.py) is
+pretty good. For larger quantities, you could use [MitoZ](https://github.com/linzhi2013/MitoZ/).
 
 The annotated mitogenomes must be in 
-[https://www.ncbi.nlm.nih.gov/Sitemap/samplerecord.html](genbank format). Mitocorrect can take as
+[genbank format](https://www.ncbi.nlm.nih.gov/Sitemap/samplerecord.html). Mitocorrect can take as
 input any number of genbank files, so your sequences can be in one or many files. Note that the 
 genbank files are read using biopython so the format must conform to the biopython expectations. 
 In some cases, it seems MitoZ omits the Division code and so does not form the LOCUS line 
@@ -105,7 +105,7 @@ Mitocorrect is a simple python script, that can be run as follows to get usage i
 | `-s`/`--specifications`  | The path to a specifications file (see above) in tab-separated variables format                                                                                                                                                                           |
 | `-g`/`--genbank`         | The path to one or more genbank-format files containing annotated mitogenomes to correct. Unless the argument `-1`/`--onefile` is used (see below), corrected sequences will be written to the output folder in the same set of files with the same names |
 | `-a`/`--alignmentpaths`  | The path to a two column tab-separated variables file giving the name and path to a profile alignment (see above) for each gene                                                                                                                           |
-| `-b`/`--translationtable`| The appropriate numeric genetic code translation table (see [https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi](here))                                                                                                                             |
+| `-b`/`--translationtable`| The appropriate numeric genetic code translation table (see [here](https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi))                                                                                                                             |
 
 #### Common optional arguments
 
@@ -122,7 +122,7 @@ Mitocorrect is a simple python script, that can be run as follows to get usage i
 
 | Argument                   | Description                                                                                                                                                                                                                 | Default                                                                                                          |
 |----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `-n`/`--namevariants`      | The path to a file specifying variant gene names to dd to those retrieved from the list [https://github.com/tjcreedy/genenames](here), in the same format                                                                   | *none*                                                                                                           |
+| `-n`/`--namevariants`      | The path to a file specifying variant gene names to dd to those retrieved from the list [here](https://github.com/tjcreedy/genenames), in the same format                                                                   | *none*                                                                                                           |
 | `-m`/`--maxinternalstops`  | The number of stops permitted in the translation of annotations                                                                                                                                                             | `0`                                                                                                              |
 | `-e`/`--framefree`         | If used, mitocorrect wil allow codon search strings to not start in frame with one another; *not generally recommended*                                                                                                     | *N/A*                                                                                                            |
 | `-p`/`--potentialfeatures` | If used, mitocorrect will add all potential annotations as features to the output genbank-format file(s); *not generally recommended*                                                                                       | *only selected annotations recorded*                                                                             |
