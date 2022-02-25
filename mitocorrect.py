@@ -7,7 +7,7 @@
 # Imports
 import argparse
 import textwrap as _textwrap
-import MITOcorrect_modules as mcm
+import mitocorrect_modules as mcm
 import shutil
 import multiprocessing
 import functools
@@ -68,13 +68,13 @@ parser._optionals.title = "arguments"
 # Required
 parser.add_argument('-s', '--specifications', type = str, metavar = 'path', required = True,
                     help = "path to a specifications file in tab-separated variables format")
-parser.add_argument('-g', '--genbank', type = str, nargs = '+', required = T, metavar = 'path',
+parser.add_argument('-g', '--genbank', type = str, nargs = '+', required = True, metavar = 'path',
                     help = "path(s) to genbank-format files containing annotated mitogenomes to "
                            "correct")
-parser.add_argument('-a', '--alignmentpaths', type = str, required = T, metavar = 'path',
+parser.add_argument('-a', '--alignmentpaths', type = str, required = True, metavar = 'path',
                     help = "path to a two column tab-separated variables file giving the name and"
                            "path to a profile alignment for each gene")
-parser.add_argument('-b', '--translationtable', type = int, required = T, metavar = 'n',
+parser.add_argument('-b', '--translationtable', type = int, required = True, metavar = 'n',
                     help = "the appropriate genetic code translation table number (see "
                            "https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi")
 
@@ -82,7 +82,7 @@ parser.add_argument('-b', '--translationtable', type = int, required = T, metava
 parser.add_argument('-t', '--threads', type = int, default = 1, metavar = 'n',
                     help = "number of simultaneous threads to use for correcting mitogenomes "
                            "(default: 1).")
-parser.add_argument('-c', '--alignmenttype', type = str, default = 'nt', choice = ['aa', 'nt'],
+parser.add_argument('-c', '--alignmenttype', type = str, default = 'nt', choices = ['aa', 'nt'],
                     help = "the type of sequence data used for the supplied profile alignments ( "
                            "default: nt)")
 parser.add_argument('-o', '--outputdirectory', type = str, default = 'mitocorrect_output',
@@ -129,17 +129,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # arglist = ("-s MITOcorrect_specs.tsv "
-    #            "-g gbmaster_2022-01-03_current/GBDL00876.gb "
-    #            "gbmaster_2022-01-03_current/GBDL00985.gb "
-    #            "gbmaster_2022-01-03_current/GBDL00750.gb "
-    #            "-l testlog.txt "
-    #            "-a aaalignfile.tsv "
-    #            "-o testout/ "
-    #            "-t 2 -b 5 -c aa -r -m 0 -f").split()
-    # import os
-    # os.chdir('/home/thomas/work/iBioGen_postdoc/MMGdatabase/')
-    # args = parser.parse_args(arglist)
+    #arglist = ("-s /home/thomc/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv "
+   #            "-g newdata_2022_02-14/corrected_annotated/seq2263.gb "
+    #           "-l testlog.txt "
+    #           "-a aaalignfile.tsv "
+    #           "-o testout/ "
+    #           "-t 2 -b 5 -c aa -r -m 0 -f").split()
+    #import os
+    #os.chdir('/home/thomc/work/iBioGen_postdoc/MMGdatabase/')
+    #args = parser.parse_args(arglist)
 
     # Parse the arguments into the main utility variables
     utilityvars = mcm.initialise(args)
