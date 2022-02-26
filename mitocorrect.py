@@ -129,15 +129,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    #arglist = ("-s /home/thomc/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv "
-   #            "-g newdata_2022_02-14/corrected_annotated/seq2263.gb "
-    #           "-l testlog.txt "
-    #           "-a aaalignfile.tsv "
-    #           "-o testout/ "
-    #           "-t 2 -b 5 -c aa -r -m 0 -f").split()
-    #import os
-    #os.chdir('/home/thomc/work/iBioGen_postdoc/MMGdatabase/')
-    #args = parser.parse_args(arglist)
+    # arglist = ("-s /home/thomas/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv "
+    #            "-g newdata_2022_02-14/uncorrected_annotated/MW035621.gb "
+    #            "-l testlog.txt "
+    #            "-a aaalignfile.tsv "
+    #            "-o testout/ "
+    #            "-t 2 -b 5 -c aa -r -m 0 -f").split()
+    # import os
+    # os.chdir('/home/thomas/work/iBioGen_postdoc/MMGdatabase/')
+    # args = parser.parse_args(arglist)
 
     # Parse the arguments into the main utility variables
     utilityvars = mcm.initialise(args)

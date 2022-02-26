@@ -681,7 +681,7 @@ def get_search_results(regions, adjustment, specs, seqrecord, feat, table, ff):
             localresults = [[i, c, l] for i, c, l in localresults if l >= 3]
             endpos = len(regions[end]['seq']) - 1
             localresults += [[endpos, i, 1] for i in [0, 1, 2]]
-            trunc = 'stop is' if not trunc else 'both start and stop are'
+            trunc = 'both start and stop are' if trunc == 'start is' else 'stop is'
         # TODO: add in default locations around existing initial positions?
         # Convert locations to contig positions and annotation frame
         outresults = []
@@ -1269,7 +1269,7 @@ def process_issues(issues):
 def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
                     temp, pid, logq, statq, target, products):
     # specifications, target = [specs, present[0]]
-    # specifications, target = [specs, 'ND5']
+    # specifications, target = [specs, 'ND6']
 
     # TODO: something to ensure original annotation is always part of the
     # results list
