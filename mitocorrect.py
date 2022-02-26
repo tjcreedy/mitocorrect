@@ -93,7 +93,7 @@ parser.add_argument('-l', '--logfile', type = str, default = 'mitocorrect.log', 
                     help = "name of a file to which log messages will be written, saved to the "
                            "output directory (default: mitocorrect.log)")
 parser.add_argument('-r', '--detailedresults', default=False, action='store_true',
-                    help = "if a file name is supplied, write a detailed table of individual "
+                    help = "if supplied, write a detailed table of individual "
                            "potential annotation statistics and scores to filtering_results.tsv "
                            "in the output directory (default: not written)")
 parser.add_argument('-1', '--onefile', type = str, metavar = 'name',
