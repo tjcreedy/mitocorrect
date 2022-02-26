@@ -107,7 +107,7 @@ parser.add_argument('-n', '--namevariants', type = str, metavar = 'path',
                     help = "path to a file specifying variant gene names to add to those retrieved"
                            "from the list at https://github.com/tjcreedy/genenames (default: no "
                            "additional variants)")  # Additional name variants file, optional
-parser.add_argument('-m', '--maxinternalstops', type = int, default = 0,
+parser.add_argument('-m', '--maxinternalstops', type = int, default = 0, metavar = 'n',
                     help = "number of stops permitted in the translation of annotations (default: "
                            "0")
 parser.add_argument('-e', '--framefree', default = False, action  = 'store_true',
