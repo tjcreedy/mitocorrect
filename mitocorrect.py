@@ -130,7 +130,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # arglist = ("-s /home/thomas/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv "
-    #            "-g newdata_2022_02-14/uncorrected_annotated/MW035621.gb "
+    #            "-g newdata_2022_02-14/uncorrected_annotated/seq812.gb "
     #            "-l testlog.txt "
     #            "-a aaalignfile.tsv "
     #            "-o testout/ "
