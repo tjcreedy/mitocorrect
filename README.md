@@ -128,7 +128,31 @@ Mitocorrect is a simple python script, that can be run as follows to get usage i
 | `-p`/`--potentialfeatures` | If used, mitocorrect will add all potential annotations as features to the output genbank-format file(s); *not generally recommended*                                                                                       | *only selected annotations recorded*                                                                             |
 | `-f`/`--fullassessment`    | If used, mitocorrect will assess the alignment of all potential annotations against the profile, even if their overlap score means they cannot possibly be selected; *not generally recommend, causes substantial slowdown* | *only align and score potential annotations that have good enough overlap scores to be contenders for selection* |
 
-### Details
+## After running mitocorrect
+
+In our experience, mitocorrect reduces the proportion of erroneous annotations from MitoZ from around 70% to about 10%. But it is not perfect. If minimal sequence curation has taken place prior to annotation, mitocorrect will struggle to find the right annotations where the ends of contigs are poor quality, where there are sequencing errors, or where many annotations in a contig are wrong. This last issue is due to the fact that mitocorrect uses slightly circular logic - it corrects annotations based on the position of neighbouring annotations, but if these are wrong it may trip up!
+
+Post mitocorrection, we recommend the following steps
+
+### 1. Align genes
+Extract the individual gene sequences from your corrected mitogenomes and align them, ideally to a profile alignment. We recommend both amino acid and nucleotide alignments.
+
+### 2. Review alignments
+Check the amino acid alignments for clear errors - frameshifts, internal stops, over- and under-runs, etc. Check the nucleotide alignment to spot where sequencing errors are causing problems.
+
+### 3a. Manually correct mitogenomes
+Correct the issues. In most cases, we find that the issues requiring correction are sequencing issues, although sometimes annotations need to be corrected.
+
+### 3b. Edit the specifications
+Over- and under-runs can usually be fixed by optimising the specifications for that gene/end.
+
+### 4. Re-run mitocorrect
+Once sequencing issues have been corrected, mitocorrect will perform much better. A second run will also hopefully fix any issues due to poorly-located neighbouring annotations. 
+
+### 5. Repeat steps 1-4
+If you have a large or challenging dataset, sometimes it takes a few cycles through this process to get the final best annotations. It might seem like a faff but remember you're probably only having to fix up ~10% of your sequences, as opposed to the 70% you'd need to fix without mitocorrect!
+
+## Details
 
 ### Scoring and selection
 Mitocorrect selects a potential annotation (specifically, a start/stop codon combination) based 
