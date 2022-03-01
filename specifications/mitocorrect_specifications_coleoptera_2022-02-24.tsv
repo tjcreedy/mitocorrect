@@ -1,6 +1,6 @@
 gene	length	lengthvariation	end	overlap	overlapmaxdistance	searchcode	searchsequence	searchdistance	alignbody	alignweight	positionweight	indelweight
-ATP6	673	1.8	start	ATP8,7	50	N	ATG/ATA/GTG/ATT	53	15	1.9	1.5 1.6
-ATP6			stop	COX3,1	50	N	TAG/TAA/TA	55	-1	1.1	2 1.6
+ATP6	673	1.8	start	ATP8,7	50	N	ATG/ATA/GTG/ATT	53	15	1.9	1.5	1.6
+ATP6			stop	COX3,1	50	N	TAG/TAA/TA	55	-1	1.1	2	1.6
 ATP8	157	6.7	start	TRND,0	35	N	ATT/ATC/AAG/ATA/TTG/AAT/ACT/CTG/GTG/TAT	45	0	1.1	1	1.6
 ATP8			stop	ATP6,7	50	N	TAA/TAG/TA/T	55	-15	1.1	2	1.6
 COX1	1541	0.4	start	TRNY,8	50	N	ATA/ATT/ATG/ATC/ACT/ACC/TTG/ACG/TTT/TTA/ACA/TTC	65	0	1.1	1	1.6
