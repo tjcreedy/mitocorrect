@@ -84,9 +84,9 @@ def halve(lis):
     return lis[:midi], lis[midi:]
 
 
-def parse_specs(path, alignpath, nameconvert):
+def parse_specs(path, alignpath, namevariants):
     # path, alignpath = [args.specifications, args.alignmentpaths]
-    # nameconvert, annotypes, nameconvert = loadnameconvert()
+    # namevariants, annotypes, nameconvert = loadnameconvert()
 
     # Parse the master specifications file
 
@@ -113,8 +113,8 @@ def parse_specs(path, alignpath, nameconvert):
 
         # Get correct gene name
         name = None
-        if items[0].upper() in nameconvert:
-            name = nameconvert[items[0].upper()]
+        if items[0].upper() in namevariants:
+            name = namevariants[items[0].upper()]
 
         if name is None:
             sys.exit(f"Error: gene name {items[0]} in first column of line {ln} is not recognised")
@@ -165,8 +165,8 @@ def parse_specs(path, alignpath, nameconvert):
                 newvalue = dict()
                 for c, d in value.items():
                     # c, d = list(value.items())[0]
-                    if c in nameconvert:
-                        c = nameconvert[c]
+                    if c in namevariants:
+                        c = namevariants[c]
                     else:
                         sys.exit(f"Error: context name {c} on line {ln} is not recognised")
                     if str_is_int(d):
