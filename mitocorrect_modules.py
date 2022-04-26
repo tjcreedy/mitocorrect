@@ -1597,7 +1597,7 @@ def print_terminal(filenames, prinq):
 ##        stdscr.refresh()
 #        sys.stdout.write(f"Done {done} of {tot}, approx {remainstr} remaining\r")
 #        sys.stdout.flush()
-\#    curses.echo()
+#    curses.echo()
 #    curses.nocbreak()
 #    curses.endwin()
 
