@@ -1166,6 +1166,9 @@ def initialise(args):
     # Generalise the tRNA conversions to allow for general trna names rather than anticodon
     # specific naming
     nameconvert = {v: (n[:4] if n[:3] == 'TRN' else n) for v, n in nameconvert.items()}
+    for n in nameconvert.values():
+        if n not in nameconvert:
+            nameconvert[n] = n
 
     # Allow user to pass an additional namevariants file
     if args.namevariants:
