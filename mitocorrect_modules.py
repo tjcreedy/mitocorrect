@@ -84,9 +84,9 @@ def halve(lis):
     return lis[:midi], lis[midi:]
 
 
-def parse_specs(path, alignpath, namevariants):
+def parse_specs(path, alignpath, nameconvert):
     # path, alignpath = [args.specifications, args.alignmentpaths]
-    # namevariants, annotypes, nameconvert = loadnameconvert()
+    # nameconvert, annotypes, namevariants = loadnameconvert()
 
     # Parse the master specifications file
 
@@ -113,8 +113,8 @@ def parse_specs(path, alignpath, namevariants):
 
         # Get correct gene name
         name = None
-        if items[0].upper() in namevariants:
-            name = namevariants[items[0].upper()]
+        if items[0].upper() in nameconvert:
+            name = nameconvert[items[0].upper()]
 
         if name is None:
             sys.exit(f"Error: gene name {items[0]} in first column of line {ln} is not recognised")
@@ -165,8 +165,8 @@ def parse_specs(path, alignpath, namevariants):
                 newvalue = dict()
                 for c, d in value.items():
                     # c, d = list(value.items())[0]
-                    if c in namevariants:
-                        c = namevariants[c]
+                    if c in nameconvert:
+                        c = nameconvert[c]
                     else:
                         sys.exit(f"Error: context name {c} on line {ln} is not recognised")
                     if str_is_int(d):
@@ -453,17 +453,13 @@ def overlap(initpos, strand, feats, specs, seqrecord):
         for cname, dist in cspecs.items():
             # cname, dist = list(cspecs.items())[0]
 
-            # Get feat keys matching this name
-            matchnames = [name for name in feats.keys() if cname in name]
-
             # Check if present, if not skip to next
-            if len(matchnames) == 0:
+            if cname in feats:
                 absent[end].add(cname)
                 continue
 
-            for mn in matchnames:
-                for cfeat in feats[mn]:
-                    contexts.append([cname, cfeat, dist])
+            for cfeat in feats[cname]:
+                contexts.append([cname, cfeat, dist])
 
         # Work through the specified context annotations
         for context in contexts:
@@ -1167,6 +1163,10 @@ def initialise(args):
     # Read in the namevariants file
     nameconvert, annotypes, namevariants = loadnamevariants()
 
+    # Generalise the tRNA conversions to allow for general trna names rather than anticodon
+    # specific naming
+    nameconvert = {v: (n[:4] if n[:3] == 'TRN' else n) for v, n in nameconvert.items()}
+
     # Allow user to pass an additional namevariants file
     if args.namevariants:
         moreconvert, moretypes, morevariants = loadnamevariants(args.namevariants)
@@ -1174,10 +1174,9 @@ def initialise(args):
         annotypes.update(moretypes)
         namevariants.update(morevariants)
 
-
-    # Read in and parse specifications table to a dict 
+    # Read in and parse specifications table to a dict
     specs = parse_specs(args.specifications, args.alignmentpaths,
-                        namevariants)
+                        nameconvert)
 
     # Make output directory and temporary directory, open logfile
     temp = os.path.join(args.outputdirectory, 'intermediate_alignments')
