@@ -27,13 +27,13 @@ def elapsed_time(start):
 
 
 def loadnamevariants(source=None):
-    variants = {}
-    types = {}
-    products = {}
+    conversion = {}
+    url = "https://raw.githubusercontent.com/tjcreedy/constants/master/gene_name_variants.txt"
+    fullparse = {}
+    alltypes = set()
     #  Identify source
 
     if source is None:
-        url = 'https://raw.githubusercontent.com/tjcreedy/genenames/main/gene_name_variants.txt'
         source = urllib.request.urlopen(url)
     else:
         source = open(source, 'r')
@@ -42,20 +42,25 @@ def loadnamevariants(source=None):
 
     for line in source:
         line = line.decode('utf-8').strip()
-        meta, listvars = line.split(':')
-        name, annotype, product = meta.split(';')
-        listvars = [name, product.upper()] + listvars.split(',')
-        types[name] = annotype
-        products[name] = product
-        for v in listvars:
+        description, variants = line.split(":")
+        name, annotype, fullname = description.split(";")
+        variants = variants.split(',')
+        variants.extend([name, fullname.upper()])
+
+        fullvariants = []
+        for v in [name] + variants:
             for g in ['', ' ']:
                 v = v.replace(g, '')
                 for s in ['', ' GENE', ' ' + annotype.upper()]:
-                    variants[v + s] = name
+                    fullvariants.append(v + s)
+                    conversion[v + s] = name
+
+        alltypes.add(annotype)
+        fullparse[name] = {'type': annotype, 'variants': fullvariants, 'product': fullname}
 
     # Close handle
     source.close()
-    return variants, types, products
+    return conversion, alltypes, fullparse
 
 
 def str_is_int(s):
@@ -79,9 +84,9 @@ def halve(lis):
     return lis[:midi], lis[midi:]
 
 
-def parse_specs(path, alignpath, namevariants):
+def parse_specs(path, alignpath, nameconvert):
     # path, alignpath = [args.specifications, args.alignmentpaths]
-    # namevariants, annotypes, products = loadnamevariants()
+    # nameconvert, annotypes, nameconvert = loadnameconvert()
 
     # Parse the master specifications file
 
@@ -108,8 +113,8 @@ def parse_specs(path, alignpath, namevariants):
 
         # Get correct gene name
         name = None
-        if items[0].upper() in namevariants:
-            name = namevariants[items[0].upper()]
+        if items[0].upper() in nameconvert:
+            name = nameconvert[items[0].upper()]
 
         if name is None:
             sys.exit(f"Error: gene name {items[0]} in first column of line {ln} is not recognised")
@@ -160,8 +165,8 @@ def parse_specs(path, alignpath, namevariants):
                 newvalue = dict()
                 for c, d in value.items():
                     # c, d = list(value.items())[0]
-                    if c in namevariants:
-                        c = namevariants[c]
+                    if c in nameconvert:
+                        c = nameconvert[c]
                     else:
                         sys.exit(f"Error: context name {c} on line {ln} is not recognised")
                     if str_is_int(d):
@@ -296,8 +301,8 @@ def parse_specs(path, alignpath, namevariants):
         items = line.strip().split('\t')
         # Get correct gene name
         name = None
-        if items[0].upper() in namevariants:
-            name = namevariants[items[0].upper()]
+        if items[0].upper() in nameconvert:
+            name = nameconvert[items[0].upper()]
         if name is None:
             sys.exit(f"Error: gene name {items[0]} on line {str(ln)} is not recognised")
         elif name not in specs:
@@ -308,7 +313,7 @@ def parse_specs(path, alignpath, namevariants):
     return specs
 
 
-def get_features(seqrecord, namevariants):
+def get_features(seqrecord, nameconvert):
     # Set up output containers
     features = defaultdict(list)
     unidentifiable_features = []
@@ -344,8 +349,8 @@ def get_features(seqrecord, namevariants):
             continue
 
         # Find the standard name
-        if featname in namevariants:
-            features[namevariants[featname]].append(feat)
+        if featname in nameconvert:
+            features[nameconvert[featname]].append(feat)
         else:
             unrecognised_names.add(featname)
 
@@ -447,13 +452,18 @@ def overlap(initpos, strand, feats, specs, seqrecord):
         contexts = []
         for cname, dist in cspecs.items():
             # cname, dist = list(cspecs.items())[0]
+
+            # Get feat keys matching this name
+            matchnames = [name for name in feats.keys() if cname in name]
+
             # Check if present, if not skip to next
-            if cname not in feats:
+            if len(matchnames) == 0:
                 absent[end].add(cname)
                 continue
 
-            for cfeat in feats[cname]:
-                contexts.append([cname, cfeat, dist])
+            for mn in matchnames:
+                for cfeat in feats[mn]:
+                    contexts.append([cname, cfeat, dist])
 
         # Work through the specified context annotations
         for context in contexts:
@@ -1110,7 +1120,7 @@ def write_detailed_results(results, gbname, seqname, target):
     return statl
 
 
-def generate_output_target(results, target, products, args):
+def generate_output_target(results, target, namevariants, args):
     # results = alignresults
 
     resultfeats = []
@@ -1144,7 +1154,7 @@ def generate_output_target(results, target, products, args):
             # Add feat details
             feat.qualifiers['gene'] = target
             feat.qualifiers['transl_table'] = args.translationtable
-            feat.qualifiers['product'] = products[target]
+            feat.qualifiers['product'] = namevariants[target]['product']
             feat.type = 'CDS'
 
             # Add the feature to the outputs
@@ -1155,13 +1165,15 @@ def generate_output_target(results, target, products, args):
 
 def initialise(args):
     # Read in the namevariants file
-    namevariants, annotypes, products = loadnamevariants()
+    nameconvert, annotypes, namevariants = loadnamevariants()
 
     # Allow user to pass an additional namevariants file
     if args.namevariants:
-        morevariants, moretypes = loadnamevariants(args.namevariants)
-        namevariants.update(morevariants)
+        moreconvert, moretypes, morevariants = loadnamevariants(args.namevariants)
+        nameconvert.update(moreconvert)
         annotypes.update(moretypes)
+        namevariants.update(morevariants)
+
 
     # Read in and parse specifications table to a dict 
     specs = parse_specs(args.specifications, args.alignmentpaths,
@@ -1174,29 +1186,29 @@ def initialise(args):
 
     sys.stdout.write("Completed initialisation, starting processing\n")
 
-    return namevariants, annotypes, products, specs, temp
+    return nameconvert, annotypes, namevariants, specs, temp
 
 
-def prepare_seqrecord(seqrecord, gbname, namevariants, annotypes,
+def prepare_seqrecord(seqrecord, gbname, nameconvert, annotypes,
                       specifications, pid, logq):
-    # namevariants, specifications = [namevars, specs]
+    # nameconvert, specifications = [namevars, specs]
     issues = dict()
     start = time.perf_counter()
 
     log = f"PID {pid} file {gbname} sequence {seqrecord.name} "
 
     # Extract:
-    # Features dict where keys are the standard names from namevariants if
+    # Features dict where keys are the standard names from nameconvert if
     # present and values are lists of features from the standard set
     # CDS, tRNA, rRNA + gene with that name
-    # Unnames set of names that could not be found in namevariants
+    # Unnames set of names that could not be found in nameconvert
     # Unfeat boolean of whether any features could not be identified
     # Ofeats list of any features that could not be identified by name or
     # are not in the standard set of types
     # flog string to print to log
 
     features, unnames, unfeat, ofeats, flog = get_features(seqrecord,
-                                                           namevariants)
+                                                           nameconvert)
     for line in flog:
         logq.put(log + line)
 
@@ -1267,7 +1279,7 @@ def process_issues(issues):
 
 
 def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
-                    temp, pid, logq, statq, target, products):
+                    temp, pid, logq, statq, target, namevariants):
     # specifications, target = [specs, present[0]]
     # specifications, target = [specs, 'ND6']
 
@@ -1330,7 +1342,7 @@ def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
 
     # Output final result(s)
     # TODO: selection of single result if equal scores
-    result = generate_output_target(alignresults, target, products, args)
+    result = generate_output_target(alignresults, target, namevariants, args)
 
     if args.potentialfeatures or len(result) == 0:
         result.append(feat)
@@ -1585,7 +1597,7 @@ def print_terminal(filenames, prinq):
 ##        stdscr.refresh()
 #        sys.stdout.write(f"Done {done} of {tot}, approx {remainstr} remaining\r")
 #        sys.stdout.flush()
-#    curses.echo()
+\#    curses.echo()
 #    curses.nocbreak()
 #    curses.endwin()
 
@@ -1627,7 +1639,7 @@ def process_seqrecord(args, utilityvars, writers, indata):
     # indata = next(seqrecordgen)
     gbname, outname, seqrecord, filetotal = indata
     seqq, statq, logq, prinq = writers
-    namevars, annotypes, products, specs, temp = utilityvars
+    nameconvert, annotypes, namevariants, specs, temp = utilityvars
 
     pid = os.getpid()
     # Extract the necessary items from the seqrecord and clean
@@ -1637,7 +1649,7 @@ def process_seqrecord(args, utilityvars, writers, indata):
     # Ofeats is any feature types not relevant (e.g. source), plus the members
     # of cleanfeats that are only context features
     present, cleanfeats, ofeats, issues = prepare_seqrecord(seqrecord, gbname,
-                                                            namevars,
+                                                            nameconvert,
                                                             annotypes, specs,
                                                             pid, logq)
 
@@ -1647,7 +1659,7 @@ def process_seqrecord(args, utilityvars, writers, indata):
         for target in present:
             outfeats.extend(correct_feature(cleanfeats, specs, gbname,
                                             seqrecord, args, temp, pid, logq,
-                                            statq, target, products))
+                                            statq, target, namevariants))
 
         # Generate the new output feature set
         if len(outfeats) > 0:

@@ -73,6 +73,11 @@ should be a tab-delimited file with the following columns:
 If a gene end does not have values for overlap and searchsequence, this will be skipped and the
 existing start or stop codon will be retained.
 
+All gene names should follow the standard format shown in the first value on each row in the 
+[gene_name_variants](https://github.com/tjcreedy/constants/blob/main/gene_name_variants.txt) file. 
+The exception to this is that TRNA genes can be referred to by the short four-letter amino acid, 
+without the anticodon, e.g. TRNG (tRNA Glutamate) can refer to either TRNG-GCC or TRNG-TCC.
+
 We supply a minimal default version of this table in this repository. We expect that this will
 not work optimally for most cases, but that it should be modified based on prior knowledge about
 the taxon, and likely through iteratively running mitocorrect and inspecting the outputs. We 
