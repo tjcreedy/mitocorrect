@@ -435,7 +435,7 @@ def overlap(initpos, strand, feats, specs, seqrecord):
 
     # Work through the ends
     for i, end in enumerate(['start', 'stop']):
-        # i, end = list(enumerate(['start', 'stop']))[1]
+        # i, end = list(enumerate(['start', 'stop']))[0]
         # Extract the relevant specifications
         snames = ['overlapmaxdistance', 'overlap']
         # maxdist, cspecs = [0, 0]
@@ -454,7 +454,7 @@ def overlap(initpos, strand, feats, specs, seqrecord):
             # cname, dist = list(cspecs.items())[0]
 
             # Check if present, if not skip to next
-            if cname in feats:
+            if cname not in feats:
                 absent[end].add(cname)
                 continue
 
@@ -1191,7 +1191,7 @@ def initialise(args):
 
 def prepare_seqrecord(seqrecord, gbname, nameconvert, annotypes,
                       specifications, pid, logq):
-    # nameconvert, specifications = [namevars, specs]
+    # nameconvert, specifications = [nameconvert, specs]
     issues = dict()
     start = time.perf_counter()
 
@@ -1657,6 +1657,7 @@ def process_seqrecord(args, utilityvars, writers, indata):
     if len(present) > 0:
         outfeats = []
         for target in present:
+            # target = present[0]
             outfeats.extend(correct_feature(cleanfeats, specs, gbname,
                                             seqrecord, args, temp, pid, logq,
                                             statq, target, namevariants))
