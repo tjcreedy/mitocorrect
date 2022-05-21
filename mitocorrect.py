@@ -130,13 +130,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # arglist = ("-s /home/thomas/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv "
-    #            "-g SRAAredux_2022-04-15/annotated_contigs.gb "
-    #            "-l testlog.txt "
-    #            "-a aaalignfile.tsv "
+    #            "-g /home/thomas/mitocorrect_test/newGBtocorrect.gb "
+    #            "-a aaalignpaths.tsv "
     #            "-o testout/ "
     #            "-t 2 -b 5 -c aa -r -m 0 -f").split()
     # import os
-    # os.chdir('/home/thomas/work/iBioGen_postdoc/MMGdatabase/')
+    # os.chdir('/home/thomas/mitocorrect_test/')
     # args = parser.parse_args(arglist)
 
     # Parse the arguments into the main utility variables
@@ -172,6 +171,7 @@ if __name__ == "__main__":
 
     # Get any errors in any of the writing processes
     for w in watchers:
-        w.get()
+        if w is not None:
+            w.get()
 
     exit()

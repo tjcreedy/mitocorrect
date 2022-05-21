@@ -26,7 +26,8 @@ def elapsed_time(start):
     return f" | {str(elapsed)}s | "
 
 
-def loadnamevariants(source=None):
+def loadnamevariants(source=None, simplifytrnas=False):
+
     conversion = {}
     url = "https://raw.githubusercontent.com/tjcreedy/constants/master/gene_name_variants.txt"
     fullparse = {}
@@ -41,22 +42,39 @@ def loadnamevariants(source=None):
     # Read source
 
     for line in source:
+        #line = list(source)[36]
         line = line.decode('utf-8').strip()
         description, variants = line.split(":")
         name, annotype, fullname = description.split(";")
         variants = variants.split(',')
-        variants.extend([name, fullname.upper()])
 
-        fullvariants = []
-        for v in [name] + variants:
+        outname, fulloutname = name, fullname
+        if simplifytrnas and annotype == 'tRNA':
+            outname = name[:4]
+            fulloutname = fullname[:8]
+
+        fullvariants = set()
+        for v in set([name, outname] + variants + [fullname.upper(), fulloutname.upper()]):
             for g in ['', ' ']:
                 v = v.replace(g, '')
                 for s in ['', ' GENE', ' ' + annotype.upper()]:
-                    fullvariants.append(v + s)
-                    conversion[v + s] = name
+                    fullvariants.add(v + s)
+                    conversion[v + s] = outname
 
         alltypes.add(annotype)
-        fullparse[name] = {'type': annotype, 'variants': fullvariants, 'product': fullname}
+        if outname not in fullparse:
+            fullparse[outname] = {'type': {annotype},
+                                  'variants': fullvariants,
+                                  'product': {fulloutname}}
+        else:
+            fullparse[outname]['type'].add(annotype)
+            fullparse[outname]['variants'].update(fullvariants)
+            fullparse[outname]['product'].add(fulloutname)
+
+    if simplifytrnas:
+        for name in fullparse.keys():
+            for i in ['type', 'product']:
+                fullparse[name][i] = list(fullparse[name][i])[0]
 
     # Close handle
     source.close()
@@ -86,7 +104,6 @@ def halve(lis):
 
 def parse_specs(path, alignpath, nameconvert):
     # path, alignpath = [args.specifications, args.alignmentpaths]
-    # nameconvert, annotypes, namevariants = loadnameconvert()
 
     # Parse the master specifications file
 
@@ -376,8 +393,8 @@ def get_features(seqrecord, nameconvert):
             other_features + unidentifiable_features, [log1, log2])
 
 
-def clean_features(features, types):
-    # features, types = feats, annotypes
+def clean_features(features, namevariants):
+    # features, types = feats, namevariants
     clean = dict()
 
     for name, feats in features.items():
@@ -391,7 +408,7 @@ def clean_features(features, types):
             clean[name] = set(targets)
         else:
             for gene in genes:
-                gene.type = types[name]
+                gene.type = namevariants[name]['type']
             clean[name] = set(genes)
 
     return clean
@@ -1161,12 +1178,7 @@ def generate_output_target(results, target, namevariants, args):
 
 def initialise(args):
     # Read in the namevariants file
-    nameconvert, annotypes, namevariants = loadnamevariants()
-
-    # Generalise the tRNA conversions to allow for general trna names rather than anticodon
-    # specific naming
-    nameconvert = {v: (n[:4] if n[:3] == 'TRN' else n) for v, n in nameconvert.items()}
-    nameconvert.update({n: n for v, n in nameconvert.items() if n not in nameconvert})
+    nameconvert, annotypes, namevariants = loadnamevariants(simplifytrnas=True)
 
     # Allow user to pass an additional namevariants file
     if args.namevariants:
@@ -1189,9 +1201,9 @@ def initialise(args):
     return nameconvert, annotypes, namevariants, specs, temp
 
 
-def prepare_seqrecord(seqrecord, gbname, nameconvert, annotypes,
+def prepare_seqrecord(seqrecord, gbname, nameconvert, namevariants,
                       specifications, pid, logq):
-    # nameconvert, specifications = [nameconvert, specs]
+    # specifications = specs
     issues = dict()
     start = time.perf_counter()
 
@@ -1207,8 +1219,7 @@ def prepare_seqrecord(seqrecord, gbname, nameconvert, annotypes,
     # are not in the standard set of types
     # flog string to print to log
 
-    features, unnames, unfeat, ofeats, flog = get_features(seqrecord,
-                                                           nameconvert)
+    features, unnames, unfeat, ofeats, flog = get_features(seqrecord, nameconvert)
     for line in flog:
         logq.put(log + line)
 
@@ -1221,7 +1232,7 @@ def prepare_seqrecord(seqrecord, gbname, nameconvert, annotypes,
     # the standard set (CDS, rRNA, tRNA), unless none present in which case
     # takes any 'gene' features and renames them to standard name
 
-    cleanfeats = clean_features(features, annotypes)
+    cleanfeats = clean_features(features, namevariants)
 
     # Establish which of the features specified by the user are present
     present, clog = check_targets(cleanfeats, specifications.keys())
@@ -1650,7 +1661,7 @@ def process_seqrecord(args, utilityvars, writers, indata):
     # of cleanfeats that are only context features
     present, cleanfeats, ofeats, issues = prepare_seqrecord(seqrecord, gbname,
                                                             nameconvert,
-                                                            annotypes, specs,
+                                                            namevariants, specs,
                                                             pid, logq)
 
     # Process the present cleanfeatures
