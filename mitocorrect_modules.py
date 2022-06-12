@@ -393,17 +393,37 @@ def get_features(seqrecord, nameconvert):
             other_features + unidentifiable_features, [log1, log2])
 
 
-def clean_features(features, namevariants):
-    # features, types = feats, namevariants
+def clean_features(features, namevariants, specs):
+
     clean = dict()
 
     for name, feats in features.items():
-        # name, feats = list(features.items())[-1]
+        # name, feats = list(features.items())[-3]
         targets = [f for f in feats if f.type in ['CDS', 'tRNA', 'rRNA']]
         genes = [f for f in feats if f.type == 'gene']
 
         if len(targets) > 0:
-            # TODO: remove duplicates if share same location details?
+
+            if len(targets) > 1:
+                # Check to see if the duplicates are all in the same area
+                locs = defaultdict(list)
+                for feat in targets:
+                    locs['start'].append(int(feat.location.start))
+                    locs['stop'].append(int(feat.location.end))
+                maxdist = {e: specs[name][e]['overlapmaxdistance'] if name in specs else 20
+                           for e in locs.keys() }
+                closeduplicates = [max(l) - min(l) < maxdist[e] for e, l in locs.items()]
+                # If so, make a starting annotation in the middle
+                if all(closeduplicates):
+                    outfeat = targets[0]
+                    newlocs = {}
+                    for e in locs.keys():
+                        newlocs[e] = int(sum(locs[e])/len(locs[e]))
+                    outfeat.location = SeqFeature.FeatureLocation(
+                        SeqFeature.ExactPosition(newlocs['start']),
+                        SeqFeature.ExactPosition(newlocs['stop']),
+                        strand = outfeat.location.strand)
+                    targets = [outfeat]
 
             clean[name] = set(targets)
         else:
@@ -465,7 +485,6 @@ def overlap(initpos, strand, feats, specs, seqrecord):
         correction = []
 
         # Generate a list of lists of all specified context features
-
         contexts = []
         for cname, dist in cspecs.items():
             # cname, dist = list(cspecs.items())[0]
@@ -824,19 +843,21 @@ def get_search_results(regions, adjustment, specs, seqrecord, feat, table, ff):
 def filter_searchresults(results, args):
     # results = copy.deepcopy(searchresults)
     resultsremain = len(results)
-    # Filter out any with more than the minimum number of internal stops
-    intstops = [r['inst'] for r in results]
-    minintstop = min(intstops)
-    maxis = 0 if minintstop > args.maxinternalstops else minintstop
-    intstoprejects = 0
-    for r in results:
-        if r['inst'] > maxis:
-            r['reject'] = "intstop > " + str(minintstop)
-            intstoprejects += 1
-            resultsremain -= 1
-    log = (f"Filtering: {str(intstoprejects)} results removed for > {str(minintstop)} internal "
-           "stops, ")
-
+    if resultsremain:
+        # Filter out any with more than the minimum number of internal stops
+        intstops = [r['inst'] for r in results]
+        minintstop = min(intstops)
+        maxis = 0 if minintstop > args.maxinternalstops else minintstop
+        intstoprejects = 0
+        for r in results:
+            if r['inst'] > maxis:
+                r['reject'] = "intstop > " + str(minintstop)
+                intstoprejects += 1
+                resultsremain -= 1
+        log = (f"Filtering: {str(intstoprejects)} results removed for > {str(minintstop)} "
+               f"internal stops, ")
+    else:
+        log = "Filtering: not performed as "
     log += f"{str(resultsremain)} results remain \n"
     return results, log
 
@@ -1138,12 +1159,14 @@ def generate_output_target(results, target, namevariants, args):
 
     resultfeats = []
 
+    npotential = 0
+    nresult = 0
     for result in results:
 
         if args.potentialfeatures:
 
             # result = results[0]
-
+            npotential += 1
             # Extract the feature
             feat = result['feat']
 
@@ -1161,6 +1184,7 @@ def generate_output_target(results, target, namevariants, args):
             resultfeats.append(feat)
 
         elif not result['reject']:
+            nresult += 1
 
             feat = result['feat']
 
@@ -1173,7 +1197,20 @@ def generate_output_target(results, target, namevariants, args):
             # Add the feature to the outputs
             resultfeats.append(feat)
 
-    return resultfeats
+    log = "Finished: "
+    if nresult == 1:
+        log += "writing selected feature"
+    else:
+        if nresult == 0:
+            log += "no selected features to write"
+        else:
+            log += f"{nresult} selected features - ambiguous"
+        log += ", retaining original feature"
+    if args.potentialfeatures:
+        log += f" plus {npotential} potential features"
+    log += "\n"
+
+    return resultfeats, log
 
 
 def initialise(args):
@@ -1202,12 +1239,12 @@ def initialise(args):
 
 
 def prepare_seqrecord(seqrecord, gbname, nameconvert, namevariants,
-                      specifications, pid, logq):
+                      specifications, pid, logq, interactive=False):
     # specifications = specs
     issues = dict()
     start = time.perf_counter()
 
-    log = f"PID {pid} file {gbname} sequence {seqrecord.name} "
+    log = f"PID{pid} {seqrecord.name} _file {gbname} "
 
     # Extract:
     # Features dict where keys are the standard names from nameconvert if
@@ -1220,8 +1257,9 @@ def prepare_seqrecord(seqrecord, gbname, nameconvert, namevariants,
     # flog string to print to log
 
     features, unnames, unfeat, ofeats, flog = get_features(seqrecord, nameconvert)
-    for line in flog:
-        logq.put(log + line)
+    if not interactive:
+        for line in flog:
+            logq.put(log + line)
 
     if len(unnames) > 0 or unfeat:
         issues['unrecnames'] = unnames
@@ -1232,12 +1270,13 @@ def prepare_seqrecord(seqrecord, gbname, nameconvert, namevariants,
     # the standard set (CDS, rRNA, tRNA), unless none present in which case
     # takes any 'gene' features and renames them to standard name
 
-    cleanfeats = clean_features(features, namevariants)
+    cleanfeats = clean_features(features, namevariants, specifications)
 
     # Establish which of the features specified by the user are present
     present, clog = check_targets(cleanfeats, specifications.keys())
-    for c in clog:
-        logq.put(log + c)
+    if not interactive:
+        for c in clog:
+            logq.put(log + c)
 
     # Generate target log
     tlog = 'Target features: '
@@ -1253,7 +1292,8 @@ def prepare_seqrecord(seqrecord, gbname, nameconvert, namevariants,
                            if n not in present]
     ofeats.extend(add_genefeatures(nontargetcleanfeats))
 
-    logq.put(log + elapsed_time(start) + tlog)
+    if not interactive:
+        logq.put(log + elapsed_time(start) + tlog)
 
     issues = issues if len(issues) > 0 else None
     return present, cleanfeats, ofeats, (seqrecord.name, issues)
@@ -1290,9 +1330,9 @@ def process_issues(issues):
 
 
 def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
-                    temp, pid, logq, statq, target, namevariants):
+                    temp, pid, logq, statq, target, namevariants, interactive=False):
     # specifications, target = [specs, present[0]]
-    # specifications, target = [specs, 'ND6']
+    # specifications, target = [specs, 'ND4']
 
     # TODO: something to ensure original annotation is always part of the
     # results list
@@ -1300,7 +1340,7 @@ def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
     # Extract the CDS
     feat = list(cleanfeats[target])[0]
     # Set up log and stats
-    log = f"PID{pid} {seqrecord.name} {target}"
+    log = f"PID{pid} {seqrecord.name} {target} | "
     # Determine the start and stop positions of the current annotation,
     # slicing by strand (1 or -1) makes order correct
     initpos = [int(feat.location.start),
@@ -1318,14 +1358,16 @@ def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
     contextpos, change, clog = overlap(initpos, feat.location.strand,
                                        cleanfeats, specifications[target],
                                        seqrecord)
-    logq.put(log + elapsed_time(start) + clog)
+    if not interactive:
+        logq.put(log + "1" + elapsed_time(start) + clog)
     # Determine and extract the search regions
     start = time.perf_counter()
     searchregions, rlog = get_regions(initpos, contextpos, rf,
                                       specifications[target],
                                       feat.location.strand,
                                       seqrecord, args.translationtable)
-    logq.put(log + elapsed_time(start) + rlog)
+    if not interactive:
+        logq.put(log + "2" + elapsed_time(start) + rlog)
     # Find possible start and stop positions
     start = time.perf_counter()
     searchresults, slog = get_search_results(searchregions,
@@ -1334,29 +1376,36 @@ def correct_feature(cleanfeats, specifications, gbname, seqrecord, args,
                                              seqrecord, feat,
                                              args.translationtable,
                                              args.framefree)
-    logq.put(log + elapsed_time(start) + slog)
+    if not interactive:
+        logq.put(log + "3" + elapsed_time(start) + slog)
     # Filter results
     start = time.perf_counter()
     filterresults, flog = filter_searchresults(copy.deepcopy(searchresults),
                                                args)
-    logq.put(log + elapsed_time(start) + flog)
+    if not interactive:
+        logq.put(log + "4" + elapsed_time(start) + flog)
     # Align and generate alignment stats
     start = time.perf_counter()
     alignresults, alog = align_and_analyse(copy.deepcopy(filterresults), args,
                                            specifications[target],
                                            target, seqrecord.name, temp)
-    logq.put(log + elapsed_time(start) + alog)
+    if not interactive:
+        logq.put(log + "5" + elapsed_time(start) + alog)
 
     if args.detailedresults:
         statq.put(write_detailed_results(alignresults, gbname, seqrecord.name,
                                          target))
 
     # Output final result(s)
-    # TODO: selection of single result if equal scores
-    result = generate_output_target(alignresults, target, namevariants, args)
+    result, olog = generate_output_target(alignresults, target, namevariants, args)
 
     if args.potentialfeatures or len(result) == 0:
         result.append(feat)
+    elif len(result) != 1:
+        result = [feat]
+
+    if not interactive:
+        logq.put(log + "6 | " + olog)
 
     return result
 
@@ -1645,7 +1694,7 @@ def start_writers(pool, manager, args):
             (seqwatch, statwatch, logwatch, printwatch))
 
 
-def process_seqrecord(args, utilityvars, writers, indata):
+def process_seqrecord(args, utilityvars, writers, interactive, indata):
     #
     # indata = next(seqrecordgen)
     gbname, outname, seqrecord, filetotal = indata
@@ -1662,16 +1711,17 @@ def process_seqrecord(args, utilityvars, writers, indata):
     present, cleanfeats, ofeats, issues = prepare_seqrecord(seqrecord, gbname,
                                                             nameconvert,
                                                             namevariants, specs,
-                                                            pid, logq)
+                                                            pid, logq, interactive)
 
     # Process the present cleanfeatures
     if len(present) > 0:
         outfeats = []
         for target in present:
-            # target = present[0]
+            # target = present[1]
             outfeats.extend(correct_feature(cleanfeats, specs, gbname,
                                             seqrecord, args, temp, pid, logq,
-                                            statq, target, namevariants))
+                                            statq, target, namevariants,
+                                            interactive))
 
         # Generate the new output feature set
         if len(outfeats) > 0:

@@ -128,15 +128,17 @@ parser.add_argument('-f', '--fullassessment', action = 'store_true', default = F
 if __name__ == "__main__":
 
     args = parser.parse_args()
+    interactive = False
 
-    # arglist = ("-s /home/thomas/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv "
-    #            "-g /home/thomas/mitocorrect_test/newGBtocorrect.gb "
-    #            "-a aaalignpaths.tsv "
+    # arglist = ("-s /home/thomas/programming/bioinformatics/mitocorrect/specifications/mitocorrect_specifications_coleoptera_2022-05-21.tsv "
+    #            "-g KX035207.gb "
+    #            "-a ../aaalignpaths.tsv "
     #            "-o testout/ "
     #            "-t 2 -b 5 -c aa -r -m 0 -f").split()
     # import os
-    # os.chdir('/home/thomas/mitocorrect_test/')
+    # os.chdir('/home/thomas/work/iBioGen_postdoc/MMGdatabase/genbank_download/final/')
     # args = parser.parse_args(arglist)
+    # interactive = True
 
     # Parse the arguments into the main utility variables
     utilityvars = mcm.initialise(args)
@@ -152,7 +154,8 @@ if __name__ == "__main__":
 
     # Do the work
     seqrecordgen = mcm.get_seqrecords(args.genbank, args.onefile)
-    issues = pool.map(functools.partial(mcm.process_seqrecord, args, utilityvars, writers),
+    issues = pool.map(functools.partial(mcm.process_seqrecord, args, utilityvars, writers,
+                                        interactive),
                       seqrecordgen)
 
     # Delete temporary alignment directory
