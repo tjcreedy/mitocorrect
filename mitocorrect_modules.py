@@ -324,6 +324,8 @@ def parse_specs(path, alignpath, nameconvert):
             sys.exit(f"Error: gene name {items[0]} on line {str(ln)} is not recognised")
         elif name not in specs:
             sys.exit(f"Error: gene name {name} on line {str(ln)} is not in {path}")
+        if not os.path.isfile(items[1]):
+            sys.exit(f"Error: no file found at path {items[1]} for gene name {name}")
         specs[name]['apath'] = items[1]
     sh.close()
 
